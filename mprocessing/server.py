@@ -15,8 +15,8 @@ import matmul as m
 import matplotlib.pyplot as plt
 
 authkey = "testcase"
-ip = "130.75.25.161"
-port = 5678
+ip = "x.x.x.x"
+port = xxxx
 
 def do_calculations(shared_job_q,shared_result_q,codebase):
     #nums = make_nums(N)
