@@ -15,8 +15,8 @@ import nullspace as ns
 import matmul as m
 
 authkey = "testcase"
-port = 5678
-ip = '130.75.25.161'
+port = xxxx
+ip = 'x.x.x.x'
 
 def worker(job_q, result_q,codebase):
     """ A worker function to be launched in a separate process. Takes jobs from
