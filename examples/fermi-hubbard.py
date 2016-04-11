@@ -19,7 +19,7 @@ import scipy as sp
 global sp
 import scipy.linalg as la
 import evoMPS.mps_gen as mg
-import tdvp_common_diss as tm
+import evoMPS.tdvp_common_diss as tm
 import evoMPS.matmul as mm
 import evoMPS.tdvp_gen as TDVP
 import itertools
