@@ -1,22 +1,52 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+This module is part of
+an extension of evoMPS by adding
+dissipative dynmaics based on
+Monte-Carlo methods.
+
+This part is the client file
+for the distributed computing
+framework that utilizes parallel
+processing to speed up dissipative
+dynamics.
+
+@author: F.W.G. Transchel
+"""
+
 import Queue as qu
 import multiprocessing as mp
 import multiprocessing.managers as mpm
 import time
 import socket
 import sys
+import traceback
 import io
 import multiprocessing.sharedctypes
 from ast import literal_eval
 import string as STR
 import pickle as pic
+import numpy as np
+global np
 import scipy as sp
+global sp
 import scipy.linalg as la
 import nullspace as ns
 import matmul as m
+import tdvp_common_diss as tm
+import matmul as mm
+import tdvp_gen as TDVP
+import scipy.sparse as spp
 
-authkey = "testcase"
-port = xxxx
-ip = 'x.x.x.x'
+authkey = "SECRET"
+port = 5678
+ip = '127.0.0.1'
+internal_call = True
+# This is used to tell tdvp_gen_diss.py
+#(and other dynamically loaded modules)
+# to not execute code on its own.
 
 def worker(job_q, result_q,codebase):
     """ A worker function to be launched in a separate process. Takes jobs from
@@ -25,7 +55,13 @@ def worker(job_q, result_q,codebase):
         result_q. Runs until job_q is empty.
     """ 
     
-    exec(codebase,globals(),locals())
+    try:
+        #print codebase
+        exec(codebase,globals(),locals())
+    except:
+        print "Unexpected error:", sys.exc_info()[0]
+        traceback.print_exc()
+        raise
     
     while True:
         try:
@@ -33,12 +69,21 @@ def worker(job_q, result_q,codebase):
             # job = data for executing something...
             # idea: serialize the code and just have it executed distributively
             result = {}
-            exec(job)
+            try:
+                exec(job)
+            except:
+                print "Unexpected error:", sys.exc_info()[0]
+                traceback.print_exc()
+                raise
             #print result
             result_q.put(result)
             time.sleep(2)
         except qu.Empty:
             return
+        except:
+            print "Unexpected error:", sys.exc_info()[0]
+            return
+            #raise
             
 def scheduler(shared_job_q, shared_result_q, codebase, nprocs):
     """ Split the work with jobs in shared_job_q and results in
@@ -72,13 +117,13 @@ def runclient():
             job_q = manager.get_job_q()
             result_q = manager.get_result_q()
             cdbs = manager.codebase().__str__() + "\n"
-            code = cdbs[12:-3]
+            code = cdbs[12:-3] #workaround to get rid of control chars
             decoded = code.replace("\\n","\n")
             decoded = decoded.replace("\\r","\r")
             #exec(decoded,globals(),locals())
             #tdvp_obj = tdvp_diss()
             #print code
-            scheduler(job_q, result_q, decoded, mp.cpu_count())
+            scheduler(job_q, result_q, decoded, (2))
             print "All available jobs finished."
             print "==="
             time.sleep(5)
@@ -96,35 +141,6 @@ def runclient():
 
 class ServerQueueManager(mpm.SyncManager):
     pass
-
-"""
-class Codebase():
-    'Codebase is the class that makes sure the tdvp code gets distributed to the clients'
-
-    codebase = "sehr langer string voller code"
-    
-    def __init__(self):
-        'Constructor of the Codebase class'
-        # Load the current versions of tdvp_diss and tdvp_gen
-        # Done on the server, no need to do it here.
-        pass
-    
-    #def get_code(self):
-    #    return self.codebase
-    
-"""
-"""
-job_q = qu.Queue()
-result_q = qu.Queue()
-codebase = mpm.Array("c_wchar","test")
-
-def jq_l():
-    return job_q
-def rq_l():
-    return result_q   
-def cdbs():
-    return codebase
-    """
     
 def make_client_manager(ip, port, authkey):
     """ Create a manager for a client. This manager connects to a server on the
